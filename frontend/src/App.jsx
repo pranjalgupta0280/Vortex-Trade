@@ -7,6 +7,7 @@ import LiveTryout from './components/LiveTryout';
 import PricingSection from './components/PricingSection';
 import AuthModal from './components/AuthModal';
 import Footer from './components/Footer';
+import { API_BASE } from './config';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -17,7 +18,7 @@ export default function App() {
   // Check backend health and DB status
   const checkHealth = async () => {
     try {
-      const res = await fetch('/api/health');
+      const res = await fetch(`${API_BASE}/api/health`);
       if (res.ok) {
         const data = await res.json();
         setDbConnected(data.database?.connected || false);
@@ -32,7 +33,7 @@ export default function App() {
     const token = localStorage.getItem('auth_token');
     if (!token) return;
     try {
-      const res = await fetch('/api/auth/me', {
+      const res = await fetch(`${API_BASE}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -63,7 +64,7 @@ export default function App() {
       return;
     }
     try {
-      const res = await fetch('/api/auth/plan', {
+      const res = await fetch(`${API_BASE}/api/auth/plan`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

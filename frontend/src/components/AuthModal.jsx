@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Lock, Mail, User, Shield, AlertCircle } from 'lucide-react';
+import { API_BASE } from '../config';
 
 export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   if (!isOpen) return null;
@@ -17,7 +18,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     setLoading(true);
     setError('');
 
-    const endpoint = isRegister ? '/api/auth/register' : '/api/auth/login';
+    const endpoint = isRegister ? `${API_BASE}/api/auth/register` : `${API_BASE}/api/auth/login`;
     const payload = isRegister ? { name, email, password, plan } : { email, password };
 
     try {

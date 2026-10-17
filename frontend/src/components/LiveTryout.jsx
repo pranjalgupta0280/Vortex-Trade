@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Play, RefreshCw, Send, CheckCircle2, AlertTriangle, ShieldCheck, TrendingUp, TrendingDown, DollarSign, Activity, FileText } from 'lucide-react';
+import { API_BASE } from '../config';
 
 export default function LiveTryout({ user }) {
   const [symbol, setSymbol] = useState('ETHUSDC');
@@ -19,7 +20,7 @@ export default function LiveTryout({ user }) {
   const fetchMarket = async () => {
     setLoadingMarket(true);
     try {
-      const res = await fetch(`/api/agent/market?symbol=${symbol}`);
+      const res = await fetch(`${API_BASE}/api/agent/market?symbol=${symbol}`);
       if (res.ok) {
         const data = await res.json();
         setMarket(data);
@@ -34,7 +35,7 @@ export default function LiveTryout({ user }) {
   // Fetch audit records
   const fetchAudits = async () => {
     try {
-      const res = await fetch('/api/agent/audits');
+      const res = await fetch(`${API_BASE}/api/agent/audits`);
       if (res.ok) {
         const data = await res.json();
         setAudits(data.audits || []);
@@ -59,7 +60,7 @@ export default function LiveTryout({ user }) {
     setExecutionResult(null);
 
     try {
-      const res = await fetch('/api/agent/analyze', {
+      const res = await fetch(`${API_BASE}/api/agent/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -89,7 +90,7 @@ export default function LiveTryout({ user }) {
     if (!decision) return;
     setExecuting(true);
     try {
-      const res = await fetch('/api/agent/execute', {
+      const res = await fetch(`${API_BASE}/api/agent/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
