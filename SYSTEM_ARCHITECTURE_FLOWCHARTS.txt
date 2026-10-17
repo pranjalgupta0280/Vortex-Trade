@@ -1,0 +1,191 @@
+================================================================================
+AI-DRIVEN AUTONOMOUS TRADING AGENT - ARCHITECTURAL FLOWCHARTS & SPECIFICATION
+Based on Synopsis: ETH-USDC Market Autonomous Trading Agent
+================================================================================
+
+1. END-TO-END PIPELINE FLOWCHART
+--------------------------------------------------------------------------------
+
+  +-------------------------+
+  |  Live Crypto Exchange   |
+  |  (Binance / Lighter)    |
+  +------------+------------+
+               |
+               | 1. Live OHLCV Feeds (1m/5m/1h)
+               v
+  +-------------------------+
+  |  Market Data Ingestion  | <------+ Real-time Polling / WS
+  +------------+------------+
+               |
+               | 2. Raw Time-Series Data
+               v
+  +-------------------------+
+  | Technical Analysis Engine|
+  | - EMA (9, 21, 50, 200)  |
+  | - MACD & Signal Line    |
+  | - RSI & Bollinger Bands |
+  +------------+------------+
+               |
+               | 3. Computed Technical Matrix + Indicators
+               v
+  +-------------------------+         +--------------------------+
+  | Portfolio State Monitor | ------> | Active Positions / PnL   |
+  +------------+------------+         | Free USDC Margin         |
+               |                      +--------------------------+
+               | 4. Combined State (Market + Technicals + Portfolio)
+               v
+  +-------------------------+
+  |  LLM Reasoning Core     | <====== Gemini / Groq LLM API
+  |  (Context-Aware Agent)  |
+  +------------+------------+
+               |
+               | 5. Candidate Action: [LONG | SHORT | CLOSE | HOLD]
+               |    + Confidence Score (0-100%) + Reasoning Summary
+               v
+  +-------------------------+
+  | Risk Management Guard   |
+  | - Max Drawdown Check    |
+  | - Position Sizing Limit |
+  | - Stop-Loss & Take-Prof |
+  +------------+------------+
+          /          \
+  [Pass] /            \ [Fail / Reject]
+        v              v
+  +-----------+  +--------------------------------+
+  | Execution |  | Reject / Revert to HOLD        |
+  | Engine    |  | Log violation reason in Audit  |
+  +-----+-----+  +--------------------------------+
+        |
+        | 6. Authenticated Order Dispatch
+        v
+  +-------------------------+
+  | Lighter Protocol Testnet| (On-Chain / Orderbook Match)
+  +------------+------------+
+        |
+        | 7. Execution Receipts & Fill Status
+        v
+  +-------------------------+
+  | PostgreSQL & Prisma ORM |
+  | Audit Trail & Analytics |
+  +-------------------------+
+
+
+2. AI DECISION ENGINE LOGIC FLOW
+--------------------------------------------------------------------------------
+
+  [Trigger New Market Candle]
+              |
+              v
+   [Fetch OHLCV & Compute EMA/MACD]
+              |
+              v
+   [Construct Structured JSON Prompt]
+       |-- Symbol: ETH-USDC
+       |-- Current Price & 24h Delta
+       |-- EMA 9 vs EMA 21 (Golden/Death Cross)
+       |-- MACD Histogram Trend
+       |-- Account Balance & Open Position Exposure
+       |-- Recent 5 Trade Audit History
+              |
+              v
+   [Invoke Gemini Flash Model]
+              |
+              v
+   [Extract Structured Decision]
+       {
+         "action": "LONG" | "SHORT" | "CLOSE" | "HOLD",
+         "confidence": 85,
+         "target_size_eth": 0.5,
+         "stop_loss_usd": 2580.0,
+         "take_profit_usd": 2720.0,
+         "rationale": "Bullish EMA crossover accompanied by MACD divergence..."
+       }
+              |
+              v
+   [Run Multi-Level Safety Validation]
+       ├── Check 1: Leverage <= Max Limit (e.g., 3x)?
+       ├── Check 2: Position size <= Max % of Total Capital?
+       ├── Check 3: Minimum confidence threshold met (e.g. >= 65%)?
+       └── Check 4: Slippage protection within tolerance?
+              |
+      +-------+-------+
+      |               |
+   [VALID]        [INVALID]
+      |               |
+      v               v
+  [Execute Order]  [Override to HOLD + Log Audit Alert]
+
+
+3. AUDIT & DATA PERSISTENCE SCHEMA (POSTGRESQL / PRISMA)
+--------------------------------------------------------------------------------
+
+  +-------------------+       +-------------------+       +--------------------+
+  |      MarketTick   |       |    AgentDecision  |       |   ExecutedTrade    |
+  +-------------------+       +-------------------+       +--------------------+
+  | id (UUID)         |       | id (UUID)         |       | id (UUID)          |
+  | symbol            | <---> | timestamp         | <---> | decisionId (FK)    |
+  | price             |       | rawPrompt         |       | orderHash / txHash |
+  | emaShort, emaLong |       | action (Enum)     |       | status (FILLED)    |
+  | macd, macdSignal  |       | confidence        |       | executedPrice      |
+  | timestamp         |       | riskPassed (Bool) |       | sizeEth, feeUsdc   |
+  +-------------------+       +-------------------+       +--------------------+
+
+================================================================================
+
+4. USER ACCOUNT & MONGODB ATLAS INTEGRATION FLOWCHART
+--------------------------------------------------------------------------------
+
+  [User Interface (React Frontend)]
+         |
+         | 1. Register / Login (Name, Email, Password, Plan)
+         v
+  [Express Auth API Controller]
+         |
+         | 2. bcrypt Password Hash + JWT Signing
+         v
+  +--------------------------------------------------------------+
+  |              MongoDB Atlas Cloud Cluster                     |
+  | (mongodb+srv://studypranjal280_db_user:...@cluster0...)      |
+  +--------------------------------------------------------------+
+         |
+         |-- Collection: `users`
+         |     ├── _id: ObjectId
+         |     ├── name: String
+         |     ├── email: String (Unique)
+         |     ├── password: Hash
+         |     ├── plan: "free" | "pro" | "institutional"
+         |     ├── balanceUsdc: 10000.0 (Simulated Margin)
+         |     └── savedStrategies: Array
+         |
+         └── Collection: `tradeaudits`
+               ├── userId: ObjectId (Ref: User)
+               ├── symbol: "ETHUSDC"
+               ├── action: "LONG" | "SHORT" | "HOLD"
+               ├── confidence: 85
+               ├── technicalContext: { ema9, ema21, macd, rsi }
+               ├── llmRationale: String (Gemini Explanations)
+               ├── riskValidation: { passed: Boolean, reason: String }
+               └── txHash: String ("0x...lighter-testnet")
+
+
+5. PRICING & TIER ACCESS FLOWCHART
+--------------------------------------------------------------------------------
+
+  [User Selects Plan in UI]
+         |
+         ├──> Free Tier (Academic Explorer)
+         │       └── 25 AI queries/day, 1h Candles, Standard EMA/MACD
+         │
+         ├──> Pro Tier ($29/mo - Quant Trader)
+         │       └── Unlimited Gemini Analysis, Custom Risk Gates, Full DB History
+         │
+         └──> Institutional Tier ($99/mo - Autonomous Fund)
+                 └── Multi-pair (ETH/BTC/SOL), Direct Lighter Testnet Execution
+         |
+         v
+  [POST /api/auth/plan]
+         |
+         v
+  [Update MongoDB User Document] -> [Issue Updated JWT / Session State]
+
+================================================================================
